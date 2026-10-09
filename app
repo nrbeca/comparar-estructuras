@@ -124,7 +124,7 @@ if f_n and f_a:
                      use_container_width=True, hide_index=True)
 
     xls = cmp.generar_excel(r, anio_n, anio_a, nota)
-    st.download_button("⬇️ Descargar Excel comparativo", xls,
+    st.download_button(" Descargar Excel comparativo", xls,
                        file_name=f"Comparativo_Estructura_{anio_n}_vs_{anio_a}.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        type="primary")
