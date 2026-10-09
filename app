@@ -3,7 +3,7 @@ import streamlit as st
 
 import comparador as cmp
 
-st.set_page_config(page_title="Comparador Estructura Programática", page_icon="", layout="wide")
+st.set_page_config(page_title="Comparador Estructura Programática", page_icon="📊", layout="wide")
 
 st.markdown(
     """
@@ -54,6 +54,11 @@ def configurar(archivo, etiqueta, key):
                 mapeo[campo] = elegido
             else:
                 mapeo.pop(campo, None)
+        if "_MENSUAL" in mapeo and "IMPORTE" not in mapeo:
+            tipos = list(mapeo["_MENSUAL"])
+            mapeo["_IMPORTE_TIPO"] = st.selectbox(
+                "Importe a usar (columnas mensuales tipo MAP)", tipos,
+                index=tipos.index(mapeo.get("_IMPORTE_TIPO", tipos[0])), key=f"{key}tipo")
         st.dataframe(df.head(5), use_container_width=True)
     faltan = [cmp.ETIQUETAS[c] for c in cmp.LLAVE
               if c not in mapeo and c != "MOD" and not (c == "PARTIDA" and "_PARTES" in mapeo)]
@@ -72,6 +77,15 @@ if f_n and f_a:
 
     n27 = cmp.normalizar(df_n, map_n)
     n26 = cmp.normalizar(df_a, map_a)
+    solo_con_importe = st.checkbox(
+        f"Contar una clave de {anio_a} como usada solo si su importe es distinto de 0",
+        value=False,
+        help="Apagado: cualquier clave que aparezca en la base anterior cuenta como existente, "
+             "aunque se haya reducido a 0. Encendido: las claves en 0 se tratan como no usadas.")
+    if solo_con_importe:
+        n26 = n26[n26["IMPORTE"].round(2) != 0]
+    tipo_a = map_a.get("_IMPORTE_TIPO") if not map_a.get("IMPORTE") else map_a.get("IMPORTE")
+    nota = f"Importe {anio_a}: {tipo_a}." + (" Claves en 0 tratadas como no usadas." if solo_con_importe else "")
     r = cmp.comparar(n27, n26)
     comp = r["comparativo"]
     nuevas = comp[comp["ESTATUS"].str.startswith("NUEVA")]
@@ -109,8 +123,8 @@ if f_n and f_a:
         st.dataframe(r["solo_2026"].drop(columns=["LLAVE_ESTRUCTURA", "UR_PARTIDA", "UR_PP"]),
                      use_container_width=True, hide_index=True)
 
-    xls = cmp.generar_excel(r, anio_n, anio_a)
-    st.download_button(" Descargar Excel comparativo", xls,
+    xls = cmp.generar_excel(r, anio_n, anio_a, nota)
+    st.download_button("⬇️ Descargar Excel comparativo", xls,
                        file_name=f"Comparativo_Estructura_{anio_n}_vs_{anio_a}.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        type="primary")
